@@ -26,13 +26,39 @@
       key_name: "{{ keypair }}"
       group: "{{ security_group }}"
       region: "{{ region }}"
-      instance_type: "{{ bastion_instance_type }}"
-      image: "{{ amis[region] }}"
+      instance_type: "{{ instance_type }}"
+      image: "{{ image }}"
       wait: true
       wait_timeout: 500
       count: "{{ instance_count }}"
       vpc_subnet_id: "{{ vpc_subnet }}"
       assign_public_ip: yes 
       monitoring: "{{ monitoring }}"
+
+  ### Add VMs to the service
+  - name: Set the VM URL
+    set_fact:
+      vm_url: "/api/{{ manageiq.event_target }}"
+
+  - name: Create an array of vm hrefs
+    set_fact:
+      vms: "{{ vms|default([]) + [ { 'href': svc_url, 'resource':  { 'href': item } } ] }}"
+    with_items:
+      - "{{ vm_url }}"
+
+  - name: Call CloudForms to register vms with the service
+    uri:
+      url: "{{ manageiq.api_url }}/api/services"
+      method: POST
+      body_format: json
+      body:
+        action: add_resource
+        resources : "{{ vms }}"
+      validate_certs: False
+      headers:
+        X-Auth-Token: "{{ manageiq.api_token }}"
+        Content-Type: "application/json"
+      status_code: 200
+    register: output
 
 
