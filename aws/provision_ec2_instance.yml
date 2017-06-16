@@ -13,7 +13,19 @@
     instance_count: 1
     monitoring: no
     vpc_subnet: default
+    # CF specific variables
+    provider_id: "763000000000003"
+    max_retries: 9
+    retry_interval: 20
   tasks:
+ # - name: CloudForms | Set the Provider URL
+ #   set_fact:
+ #     provider_url: "{{ manageiq.api_url }}/api/providers/{{ provider_id }}"
+ #
+ # - name: CloudForms | Set the Service URL
+ #   set_fact:
+ #     svc_url: "/api/{{ manageiq.service }}"
+
   #- name: Find VCP Subnet for the cluster
   #  ec2_vpc_subnet_facts:
   #    region: "{{ region }}"
@@ -34,31 +46,122 @@
       vpc_subnet_id: "{{ vpc_subnet }}"
       assign_public_ip: yes 
       monitoring: "{{ monitoring }}"
+    register: ec2
 
-  ### Add VMs to the service
-  - name: Set the VM URL
+  - debug: var=ec2
+
+  #- name: Wait for SSH to come up
+  #  wait_for:
+  #    host: "{{ item.public_dns_name }}"
+  #    port: 22
+  #    delay: 60
+  #    timeout: 320
+  #    state: started
+  #  with_items: 
+  #    - "{{ ec2.instances }}"
+
+  #- name: Instance info
+  #  debug:
+  #    msg: "{{ item.id }} {{ item.public_ip }}"
+  #  with_items: 
+  #    - "{{ ec2.instances }}"
+
+  #- name: Add instances to a group
+  #  add_host:
+  #    name: "{{ item.public_ip }}"
+  #    groups: testgroup
+  #  with_items: "{{ ec2.instances }}"
+
+  - name: CloudForms | Refresh provider 
+    uri:
+      url: "{{ provider_url }}"
+      method: POST
+      body:
+        action: refresh
+      body_format: json
+      validate_certs: False
+      headers:
+        X-Auth-Token: "{{ manageiq.api_token }}"
+        Content-Type: "application/json" 
+      status_code: 200
+    register: output
+
+  - debug: var=output
+
+  - name: CloudForms | Set the task href
     set_fact:
-      vm_url: "/api/{{ manageiq.event_target }}"
+      task_url: "{{ output.json.task_href}}"
+  - debug: var=task_url
 
-  - name: Create an array of vm hrefs
+  - name: CloudForms | Wait for the refresh to end
+    uri:
+      url: "{{ task_url }}"
+      method: GET
+      validate_certs: False
+      headers:
+        X-Auth-Token: "{{ manageiq.api_token }}"
+        Content-Type: "application/json" 
+      status_code: 200
+    register: task_result
+    until: task_result.json.state == 'Finished' or task_result.json.status == 'Error'
+    failed_when: task_result.json.status == 'Error'
+    retries: "{{max_retries}}"
+    delay: "{{retry_interval}}"
+
+  - debug: var=task_result
+
+  - name: Lookup instance href
+    uri:
+      url: "{{ manageiq.api_url }}/api/vms?filter[]=name={{ item.id }}&expand=resources"
+      method: GET
+      body:
+        action: refresh
+      body_format: json
+      validate_certs: False
+      headers:
+        X-Auth-Token: "{{ manageiq.api_token }}"
+        Content-Type: "application/json"
+      status_code: 200
+    register: instance_output
+    with_items: 
+      - "{{ ec2.instances }}"
+
+  - name: Set the Service URL
     set_fact:
-      vms: "{{ vms|default([]) + [ { 'href': svc_url, 'resource':  { 'href': item } } ] }}"
-    with_items:
-      - "{{ vm_url }}"
+      svc_url: "/api/{{ manageiq.service }}"
 
-  - name: Call CloudForms to register vms with the service
+  - name: Initialize an empty list for vms
+    set_fact:
+      vms: []
+
+  - name: Append resource href to vms list
+    set_fact:
+      vms: "{{ vms }} + [ { 'href': svc_url, 'resource': { 'href': '/api/vms/{{ item.json.resources[0].id }}' } } ]"
+    with_items: "{{ instance_output.results }}"
+
+  - debug: var=vms
+
+  - name: Register vms with the service
     uri:
       url: "{{ manageiq.api_url }}/api/services"
       method: POST
       body_format: json
       body:
         action: add_resource
-        resources : "{{ vms }}"
+        resources: "{{ vms }}"
       validate_certs: False
       headers:
         X-Auth-Token: "{{ manageiq.api_token }}"
         Content-Type: "application/json"
       status_code: 200
     register: output
+
+  - debug: var=output.json.results[0].success
+
+  - name: Check if the VM was successfully attached to service
+    fail: msg="{{output.json.results[0].message}}"
+    when: output.json.results[0].success == false
+
+
 
 
