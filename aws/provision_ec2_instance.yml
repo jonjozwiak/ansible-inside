@@ -14,7 +14,8 @@
     monitoring: no
     vpc_subnet: default
     # CF specific variables
-    provider_id: "763000000000002"
+    provider_id: "763000000000003"
+    #provider_id: "763000000000002"
     max_retries: 9
     retry_interval: 20
   tasks:
@@ -131,6 +132,11 @@
   - name: Initialize an empty list for vms
     set_fact:
       vms: []
+
+  - name: fail when VM not found in VMDB
+      msg: "Cannot find VM in VMDB.  Did CloudForms Provider Refresh Fail?  Is the correct provider specified?"
+    when: "item.json.resources[0].id is undefined"
+    with_items: "{{ instance_output.results }}"
 
   - name: Append resource href to vms list
     set_fact:
