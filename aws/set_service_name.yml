@@ -49,10 +49,10 @@
         Content-Type: "application/json"
       status_code: 200
     register: output
-    when: "service_name is not ''"
+    when: "'{{ service_name }}' != ''"
 
   - debug: var=output   
-    when: "service_name is not ''"
+    when: "'{{ service_name }}' != ''"
 
 
 
