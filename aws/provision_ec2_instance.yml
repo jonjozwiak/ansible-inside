@@ -167,5 +167,12 @@
     when: output.json.results[0].success == false
 
 
+### TODO 
+### CHANGE SERVICE NAME with a PUT to /api/services/##
+### http://manageiq.org/docs/reference/latest/api/overview/http shows exampe json ... 
+### if (and only if) service_name is not ""
+### Probably want to add a check afterwards for json success... 
+
+
 
 
