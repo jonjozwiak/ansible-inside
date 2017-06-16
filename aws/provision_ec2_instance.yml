@@ -134,6 +134,7 @@
       vms: []
 
   - name: fail when VM not found in VMDB
+    fail:
       msg: "Cannot find VM in VMDB.  Did CloudForms Provider Refresh Fail?  Is the correct provider specified?"
     when: "item.json.resources[0].id is undefined"
     with_items: "{{ instance_output.results }}"
