@@ -11,6 +11,13 @@
     max_retries: 9
     retry_interval: 20
   tasks:
+<<<<<<< HEAD
+=======
+  - name: CloudForms | Set the Provider URL
+    set_fact:
+      provider_url: "{{ manageiq.api_url }}/api/providers/{{ provider_id }}"
+ 
+>>>>>>> a04ce0246e0b7546c60d47d1ae6babc53f28c0b7
   - name: CloudForms | Set the Service URL
     set_fact:
       svc_url: "/api/{{ manageiq.service }}"
