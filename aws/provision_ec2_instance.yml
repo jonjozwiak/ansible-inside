@@ -126,7 +126,7 @@
     with_items: 
       - "{{ ec2.instances }}"
   
-  - debug: instance_output
+  - debug: var=instance_output
 
   - name: Initialize an empty list for vms
     set_fact:
