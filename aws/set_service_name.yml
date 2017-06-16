@@ -1,0 +1,100 @@
+---
+### Simple test for setting a service name on provision
+- name: Set service name
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  #user: root
+  vars:
+    service_name: ""
+    service_description: ""
+    max_retries: 9
+    retry_interval: 20
+  tasks:
+  - name: CloudForms | Set the Provider URL
+    set_fact:
+      provider_url: "{{ manageiq.api_url }}/api/providers/{{ provider_id }}"
+ 
+  - name: CloudForms | Set the Service URL
+    set_fact:
+      svc_url: "/api/{{ manageiq.service }}"
+
+  - debug: var=svc_url
+
+  - name: CloudForms | Get Service
+    uri:
+      url: "{{ manageiq.api_url }}{{ svc_url }}"
+      method: GET
+      body:
+        action: refresh
+      body_format: json
+      validate_certs: False
+      headers:
+        X-Auth-Token: "{{ manageiq.api_token }}"
+        Content-Type: "application/json" 
+      status_code: 200
+    register: service
+
+  - debug: var=service
+
+  - name: CloudForms | Update Service Name
+    uri:
+      url: "{{ manageiq.api_url }}{{ svc_url }}"
+      method: POST
+      body_format: json
+      body:
+        action: edit
+        resource: 
+          name: "{{ service_name }}"
+          description:  "{{ service_description }}"
+      validate_certs: False
+      headers:
+        X-Auth-Token: "{{ manageiq.api_token }}"
+        Content-Type: "application/json"
+      status_code: 200
+    register: output
+
+  - debug: var=output   
+
+  #- name: CloudForms | Wait for ser
+  #  uri:
+  #    url: "{{ task_url }}"
+  #    method: GET
+  #    validate_certs: False
+  #    headers:
+  #      X-Auth-Token: "{{ manageiq.api_token }}"
+  #      Content-Type: "application/json" 
+  #    status_code: 200
+  #  register: task_result
+  #  until: task_result.json.state == 'Finished' or task_result.json.status == 'Error'
+  #  failed_when: task_result.json.status == 'Error'
+  #  retries: "{{max_retries}}"
+  #  delay: "{{retry_interval}}"
+
+  #- debug: var=task_result
+
+
+  #- name: Register vms with the service
+  #  uri:
+  #    url: "{{ manageiq.api_url }}/api/services"
+  #    method: POST
+  #    body_format: json
+  #    body:
+  #      action: add_resource
+  #      resources: "{{ vms }}"
+  #    validate_certs: False
+  #    headers:
+  #      X-Auth-Token: "{{ manageiq.api_token }}"
+  #      Content-Type: "application/json"
+  #    status_code: 200
+  #  register: output
+
+  #- debug: var=output.json.results[0].success
+
+  #- name: Check if the VM was successfully attached to service
+  #  fail: msg="{{output.json.results[0].message}}"
+  #  when: output.json.results[0].success == false
+
+
+
+
