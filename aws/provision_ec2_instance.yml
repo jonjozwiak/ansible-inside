@@ -14,7 +14,7 @@
     monitoring: no
     vpc_subnet: default
     # CF specific variables
-    provider_id: "763000000000003"
+    provider_id: "763000000000002"
     max_retries: 9
     retry_interval: 20
   tasks:
