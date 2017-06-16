@@ -110,7 +110,7 @@
 
   - debug: var=task_result
 
-  - name: Lookup instance href
+  - name: CloudForms | Lookup instance href
     uri:
       url: "{{ manageiq.api_url }}/api/vms?filter[]=name={{ item.id }}&expand=resources"
       method: GET
@@ -125,10 +125,8 @@
     register: instance_output
     with_items: 
       - "{{ ec2.instances }}"
-
-  - name: Set the Service URL
-    set_fact:
-      svc_url: "/api/{{ manageiq.service }}"
+  
+  - debug: instance_output
 
   - name: Initialize an empty list for vms
     set_fact:
