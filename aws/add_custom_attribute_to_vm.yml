@@ -69,7 +69,7 @@
 
   - debug: var=custom_attributes.results[0].json.custom_attributes
 
-  - debug: var={{ (custom_attributes.results[0].json.custom_attributes | from_json ).name }}
+  - debug: msg="{{ custom_attributes.results[0].json.custom_attributes | map(attribute='name') | map{'from_json') | list }}"
   - name: Fail if custom attributes don't exist
     fail: msg="{{item}} not in custom attributes"
     when: "'{{item}}' not in custom_attributes.results[0].json.custom_attributes"
