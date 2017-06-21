@@ -69,7 +69,7 @@
 
   - name: Fail if custom attributes don't exist
     fail: msg="{{item}} not in custom attributes"
-    when: "'{{item}}' not in custom_attributes.results.custom_attributes"
+    when: "'{{item}}' not in custom_attributes.results[0].json.custom_attributes"
     with_items: 
       - ca1
       - ca2
