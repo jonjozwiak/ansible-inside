@@ -67,6 +67,8 @@
  
   - debug: var=custom_attributes
 
+  - debug: var=custom_attributes.results[0].json.custom_attributes
+
   - name: Fail if custom attributes don't exist
     fail: msg="{{item}} not in custom attributes"
     when: "'{{item}}' not in custom_attributes.results[0].json.custom_attributes"
