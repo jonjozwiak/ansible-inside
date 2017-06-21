@@ -79,9 +79,9 @@
 
   - name: Fail if custom attributes don't exist
     fail: msg="{{item[0]}} not in custom attributes"
-    when: "'item[0]' not in 'item[1]'"
-    with_nested: 
-      - [ 'ca1', 'ca2' ]
-      - "{{ ca_names }}"
+    when: "'item[0]' not in ca_names"
+    with_items: 
+      - ca1
+      - ca2
 
 
