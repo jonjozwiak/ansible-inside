@@ -78,8 +78,8 @@
   - debug: var=ca_names
 
   - name: Fail if custom attributes don't exist
-    fail: msg="{{item[0]}} not in custom attributes"
-    when: "'item[0]' not in ca_names"
+    fail: msg="{{item}} not in custom attributes"
+    when: "item not in ca_names"
     with_items: 
       - ca1
       - ca2
