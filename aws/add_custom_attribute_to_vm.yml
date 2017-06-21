@@ -55,7 +55,7 @@
 
   - name: Get Custom Attributes for VM 
     uri:
-      url: "{{ manageiq.api_url }}/api/vms/{{ item.json.resources[0].id }}/custom_attributes"
+      url: "{{ manageiq.api_url }}/api/vms/{{ item.json.resources[0].id }}?expand=custom_attributes"
       method: GET
       validate_certs: False
       headers:
@@ -69,7 +69,7 @@
 
   - name: Fail if custom attributes don't exist
     fail: msg="{{item}} not in custom attributes"
-    when: "'{{item}}' not in custom_attributes.stdout"
+    when: "'{{item}}' not in custom_attributes.results.custom_attributes"
     with_items: 
       - ca1
       - ca2
