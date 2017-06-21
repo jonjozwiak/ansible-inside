@@ -1,19 +1,12 @@
 ---
-- name: Add Custom Attribute to EC2 Instance
+# API Reference: http://manageiq.org/docs/reference/latest/api/reference/custom_attributes
+- name: Add Custom Attribute to VM or Instance
   hosts: localhost
   connection: local
   gather_facts: false
   #user: root
-  vars:
-    # CF specific variables
-    provider_id: "763000000000002"
-    max_retries: 9
-    retry_interval: 20
+  #vars:
   tasks:
-  - name: CloudForms | Set the Provider URL
-    set_fact:
-      provider_url: "{{ manageiq.api_url }}/api/providers/{{ provider_id }}"
- 
   - name: CloudForms | Lookup instance href
     uri:
       url: "{{ manageiq.api_url }}/api/vms?filter[]=name={{ item }}&expand=resources"
@@ -32,22 +25,11 @@
   
   - debug: var=instance_output
 
-  #- name: Initialize an empty list for vms
-  #  set_fact:
-  #    vms: []
-
   - name: fail when VM not found in VMDB
     fail:
-      msg: "Cannot find VM in VMDB.  Did CloudForms Provider Refresh Fail?  Is the correct provider specified?"
+      msg: "Cannot find VM in VMDB."
     when: "item.json.resources[0].id is undefined"
     with_items: "{{ instance_output.results }}"
-
-  #- name: Append resource href to vms list
-  #  set_fact:
-  #    vms: "{{ vms }} + [ { 'href': svc_url, 'resource': { 'href': '/api/vms/{{ item.json.resources[0].id }}' } } ]"
-  #  with_items: "{{ instance_output.results }}"
-
-  - debug: var=vms
 
   - name: Assign Custom Attribute
     uri:
@@ -69,19 +51,27 @@
     with_items: "{{ instance_output.results }}"
     register: output
 
-  - debug: var=output.json.results[0].success
+  - debug: var=output
 
-  - name: Check if the VM was successfully attached to service
-    fail: msg="{{output.json.results[0].message}}"
-    when: output.json.results[0].success == false
+  - name: Get Custom Attributes for VM 
+    uri:
+      url: "{{ manageiq.api_url }}/api/vms/{{ item.json.resources[0].id }}/custom_attributes"
+      method: GET
+      validate_certs: False
+      headers:
+        X-Auth-Token: "{{ manageiq.api_token }}"
+        Content-Type: "application/json"
+      status_code: 200
+    with_items: "{{ instance_output.results }}"
+    register: custom_attributes
+ 
+  - debug: var=custom_attributes
 
-
-### TODO 
-### CHANGE SERVICE NAME with a PUT to /api/services/##
-### http://manageiq.org/docs/reference/latest/api/overview/http shows exampe json ... 
-### if (and only if) service_name is not ""
-### Probably want to add a check afterwards for json success... 
-
-
+  - name: Fail if custom attributes don't exist
+    fail: msg="{{item}} not in custom attributes"
+    when: "'{{item}}' not in custom_attributes.stdout"
+    with_items: 
+      - ca1
+      - ca2
 
 
