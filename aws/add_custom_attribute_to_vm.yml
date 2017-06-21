@@ -69,11 +69,12 @@
 
   - debug: var=custom_attributes.results[0].json.custom_attributes
 
+  - debug: var={{ (custom_attributes.results[0].json.custom_attributes | from_json ).name }}
   - name: Fail if custom attributes don't exist
     fail: msg="{{item}} not in custom attributes"
     when: "'{{item}}' not in custom_attributes.results[0].json.custom_attributes"
-    with_items: 
-      - ca1
-      - ca2
+    with_nested: 
+      - [ 'ca1', 'ca2' ]
+      - custom_attributes.results[0].json.custom_attributes
 
 
