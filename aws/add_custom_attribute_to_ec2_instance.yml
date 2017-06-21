@@ -16,7 +16,7 @@
  
   - name: CloudForms | Lookup instance href
     uri:
-      url: "{{ manageiq.api_url }}/api/vms?filter[]=name={{ item.id }}&expand=resources"
+      url: "{{ manageiq.api_url }}/api/vms?filter[]=name={{ item }}&expand=resources"
       method: GET
       body:
         action: refresh
