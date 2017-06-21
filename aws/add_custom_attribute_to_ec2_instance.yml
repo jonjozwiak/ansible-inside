@@ -1,0 +1,87 @@
+---
+- name: Add Custom Attribute to EC2 Instance
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  #user: root
+  vars:
+    # CF specific variables
+    provider_id: "763000000000002"
+    max_retries: 9
+    retry_interval: 20
+  tasks:
+  - name: CloudForms | Set the Provider URL
+    set_fact:
+      provider_url: "{{ manageiq.api_url }}/api/providers/{{ provider_id }}"
+ 
+  - name: CloudForms | Lookup instance href
+    uri:
+      url: "{{ manageiq.api_url }}/api/vms?filter[]=name={{ item.id }}&expand=resources"
+      method: GET
+      body:
+        action: refresh
+      body_format: json
+      validate_certs: False
+      headers:
+        X-Auth-Token: "{{ manageiq.api_token }}"
+        Content-Type: "application/json"
+      status_code: 200
+    register: instance_output
+    with_items: 
+      - "finaltest"
+  
+  - debug: var=instance_output
+
+  #- name: Initialize an empty list for vms
+  #  set_fact:
+  #    vms: []
+
+  - name: fail when VM not found in VMDB
+    fail:
+      msg: "Cannot find VM in VMDB.  Did CloudForms Provider Refresh Fail?  Is the correct provider specified?"
+    when: "item.json.resources[0].id is undefined"
+    with_items: "{{ instance_output.results }}"
+
+  #- name: Append resource href to vms list
+  #  set_fact:
+  #    vms: "{{ vms }} + [ { 'href': svc_url, 'resource': { 'href': '/api/vms/{{ item.json.resources[0].id }}' } } ]"
+  #  with_items: "{{ instance_output.results }}"
+
+  - debug: var=vms
+
+  - name: Assign Custom Attribute
+    uri:
+      url: "{{ manageiq.api_url }}/api/vms/{{ item.json.resources[0].id }}/custom_attributes"
+      method: POST
+      body_format: json
+      body:
+        action: add
+        resources: 
+          - name: "ca1"
+            value: "value 1"
+          - name: "ca2"
+            value: "value 2"
+      validate_certs: False
+      headers:
+        X-Auth-Token: "{{ manageiq.api_token }}"
+        Content-Type: "application/json"
+      status_code: 200
+    with_items: "{{ instance_output.results }}"
+    register: output
+
+  - debug: var=output.json.results[0].success
+
+  - name: Check if the VM was successfully attached to service
+    fail: msg="{{output.json.results[0].message}}"
+    when: output.json.results[0].success == false
+
+
+### TODO 
+### CHANGE SERVICE NAME with a PUT to /api/services/##
+### http://manageiq.org/docs/reference/latest/api/overview/http shows exampe json ... 
+### if (and only if) service_name is not ""
+### Probably want to add a check afterwards for json success... 
+
+
+
+
